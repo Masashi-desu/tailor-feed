@@ -1,0 +1,35 @@
+{
+ "categories": [
+  [
+   "news",
+   "News",
+   "#0891b2"
+  ],
+  [
+   "hobby",
+   "Hobby",
+   "#ea580c"
+  ]
+ ],
+ "hot_tags": [
+  "widget"
+ ],
+ "tag_categories": [
+  "hobby"
+ ],
+ "tag_rules": {
+  "widget": [
+   "widget",
+   "gadget"
+  ],
+  "new-product": [
+   "launch",
+   "announc"
+  ]
+ },
+ "aggregator": {
+  "host": "news.aggregator.example",
+  "source_prefix": "Example Aggregator",
+  "via_label": "via Example Aggregator"
+ }
+}

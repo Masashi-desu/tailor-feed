@@ -1,0 +1,14 @@
+# --- custom / operational (never commit) ---
+.env
+*.env
+config/feeds.json
+config/settings.json
+data/
+public/index.html
+public/og/
+logs/
+*.bak*
+# --- local tooling ---
+.venv/
+__pycache__/
+*.pyc

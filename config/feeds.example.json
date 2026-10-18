@@ -1,0 +1,17 @@
+[
+ [
+  "Example Feed A",
+  "news",
+  "https://news.example.com/feed.xml"
+ ],
+ [
+  "Example Feed B",
+  "news",
+  "https://blog.example.org/rss"
+ ],
+ [
+  "Example Feed C",
+  "hobby",
+  "https://hobby.example.net/atom.xml"
+ ]
+]
