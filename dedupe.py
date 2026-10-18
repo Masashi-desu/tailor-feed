@@ -48,7 +48,7 @@ def url_key(url, orig=None):
 
 def migrate(con):
     cols = {r[1] for r in con.execute("PRAGMA table_info(news)")}
-    for c in ("canon_key", "orig_url", "title_key"):
+    for c in ("canon_key", "orig_url", "title_key", "og_image"):
         if c not in cols: con.execute(f"ALTER TABLE news ADD COLUMN {c} TEXT")
     con.execute("CREATE INDEX IF NOT EXISTS idx_canon ON news(canon_key)")
     con.execute("CREATE INDEX IF NOT EXISTS idx_tkey ON news(title_key)")
