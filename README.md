@@ -61,6 +61,14 @@ handle_path /tailor-feed/* {
 }
 ```
 
+## Known limitations
+
+`collect.py` removes tracking parameters with a legacy regular expression. If the first query parameter
+is removed while another remains, the `?` can be lost (for example,
+`https://example.com/story?utm_source=feed&id=42` becomes `https://example.com/story&id=42`).
+This behaviour is retained to preserve URL and duplicate-key compatibility with existing databases;
+correcting it requires a migration strategy for previously stored URLs and keys.
+
 ## License
 
 MIT — see [LICENSE](LICENSE). Third-party dependencies retain their own licenses.
