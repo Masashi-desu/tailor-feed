@@ -60,3 +60,7 @@ handle_path /tailor-feed/* {
 	reverse_proxy 127.0.0.1:8095
 }
 ```
+
+## License
+
+MIT — see [LICENSE](LICENSE). Third-party dependencies retain their own licenses.
