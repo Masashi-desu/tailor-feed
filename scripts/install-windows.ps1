@@ -1,5 +1,5 @@
 # Per-user setup (no admin): venv, Startup shortcut for the server, 07:00 daily task.
-param([int]$Port = 8095, [string]$Time = "07:00")
+param([ValidateRange(1, 65535)][int]$Port = 8095, [string]$Time = "07:00")
 $ErrorActionPreference = "Stop"
 $root = Split-Path -Parent $PSScriptRoot
 Set-Location -LiteralPath $root
@@ -12,7 +12,7 @@ $lnk = Join-Path $startup "Tailor-feed server.lnk"
 $ws = New-Object -ComObject WScript.Shell
 $s = $ws.CreateShortcut($lnk)
 $s.TargetPath = "$env:WINDIR\System32\wscript.exe"
-$s.Arguments = "`"$root\scripts\start-server.vbs`""
+$s.Arguments = "`"$root\scripts\start-server.vbs`" $Port"
 $s.WorkingDirectory = $root
 $s.Save()
 # Daily pipeline task (current user, runs only when logged on => no password/admin needed)
