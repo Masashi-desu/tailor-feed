@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Fetch og:image / twitter:image for recent articles, cache resized copies to public/og/<id>.<ext>.
 Columns: og_image (local path 'og/<id>.webp' or NULL), og_checked_at (ISO). Failures retried after RETRY_DAYS."""
-import json, os, re, sqlite3, sys, html as H
+import ipaddress, json, os, re, socket, sqlite3, sys, html as H
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timedelta, timezone
 from io import BytesIO
@@ -19,6 +19,21 @@ OGDIR = os.path.join(BASE, "public", "og")
 DAYS, RETRY_DAYS, KEEP_DAYS, WORKERS, TIMEOUT, MAXW, MINW = 14, 3, 30, 8, 8, 800, 200
 UA = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0 Safari/537.36",
       "Accept-Language": "ja,en;q=0.8"}
+
+def require_public_url(request):
+    """Reject non-public destinations before each OG request, including redirects."""
+    url = request.url
+    if url.scheme not in ("http", "https") or not url.host:
+        raise ValueError("OG requests require an HTTP(S) host")
+    port = url.port or (443 if url.scheme == "https" else 80)
+    addresses = socket.getaddrinfo(url.host, port, type=socket.SOCK_STREAM)
+    if not addresses:
+        raise ValueError("OG host resolved to no addresses")
+    for _, _, _, _, sockaddr in addresses:
+        address = ipaddress.ip_address(sockaddr[0])
+        address = getattr(address, "ipv4_mapped", None) or address
+        if not address.is_global or address.is_multicast or address.is_reserved:
+            raise ValueError("OG requests require publicly routable addresses")
 
 def migrate(con):
     cols = {r[1] for r in con.execute("PRAGMA table_info(news)")}
@@ -71,7 +86,8 @@ def save_image(cl, iid, img_url, referer):
 def work(row):
     iid, url, orig = row
     try:
-        with httpx.Client(headers=UA, timeout=TIMEOUT, follow_redirects=True) as cl:
+        with httpx.Client(headers=UA, timeout=TIMEOUT, follow_redirects=True,
+                          event_hooks={"request": [require_public_url]}) as cl:
             if settings.AGG_HOST and urlparse(url).netloc.endswith(settings.AGG_HOST):
                 real = orig or agg_resolve(cl, url)
                 if not real: return iid, None, "aggregator unresolved"
