@@ -29,7 +29,7 @@
  },
  "aggregator": {
   "host": "news.aggregator.example",
-  "source_prefix": "Example Aggregator",
-  "via_label": "via Example Aggregator"
+  "source_prefix": "news.aggregator.example",
+  "via_label": "via news.aggregator.example"
  }
 }

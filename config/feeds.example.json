@@ -1,16 +1,16 @@
 [
  [
-  "Example Feed A",
+  "news.example.com",
   "news",
   "https://news.example.com/feed.xml"
  ],
  [
-  "Example Feed B",
+  "blog.example.org",
   "news",
   "https://blog.example.org/rss"
  ],
  [
-  "Example Feed C",
+  "hobby.example.net",
   "hobby",
   "https://hobby.example.net/atom.xml"
  ]
