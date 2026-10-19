@@ -135,7 +135,11 @@ ul{list-style:none;margin:0;padding:0}.item{background:var(--card);border:1px so
 .item.img .board{color:#fde047}.item.img .cat{text-shadow:none}
 @media (prefers-color-scheme:dark){.item.img{box-shadow:0 2px 12px rgba(0,0,0,.5);outline:1px solid var(--bd)}}
 @media (max-width:480px){.item,.item.img{height:220px}.item.img .ov{padding:48px 12px 10px}.item.img a{font-size:15px}}
-</style></head><body>
+/* overlay scrollbars: hide native everywhere, draw thin translucent thumbs on top */
+html,body,*{scrollbar-width:none;-ms-overflow-style:none}html::-webkit-scrollbar,body::-webkit-scrollbar,*::-webkit-scrollbar{display:none;width:0;height:0}
+.osb{position:fixed;z-index:2147483000;border-radius:3px;background:rgba(128,128,128,.45);opacity:0;transition:opacity .2s ease,background-color .15s ease;pointer-events:none;touch-action:none;will-change:transform,opacity}
+.osb.on{opacity:1;pointer-events:auto}.osb:hover,.osb.drag{background:rgba(128,128,128,.7)}
+@media (prefers-color-scheme:dark){.osb{background:rgba(200,200,200,.4)}.osb:hover,.osb.drag{background:rgba(220,220,220,.65)}}</style></head><body>
 <header class="hd"><div class="in"><h1><i data-lucide="receipt-text" class="hi"></i>ニュースタイムライン</h1><div class="upd">%%UPD%%</div></div></header>
 <div id="sent" style="height:1px;margin-bottom:-1px"></div><section class="wk" id="wk"><div class="panel"><div class="ml" id="ml"></div>
 <div class="row"><button class="arr" id="prev" aria-label="前の週">‹</button><div class="vp" id="vp"></div><button class="arr" id="next" aria-label="次の週">›</button></div><nav id="cats">%%BTNS%%</nav><div class="cnt" id="cnt" hidden></div></div></section><main id="list"></main>
@@ -210,7 +214,46 @@ const fromHash=()=>{const h=decodeURIComponent(location.hash.slice(1));return va
 window.addEventListener('hashchange',()=>{const h=fromHash();if(h&&h!==sel)go(h)});
 sel=fromHash()||tokyoToday();go(sel,false);
 })();
-</script><script src="https://cdn.jsdelivr.net/npm/lucide@1.59.0/dist/umd/lucide.min.js"></script><script>lucide.createIcons();</script>
+</script><script>/* overlay scrollbar (vanilla). Native bars are hidden via CSS; thumbs are fixed-position overlays (no layout shift). */
+(()=>{const W=6,GAP=2,MIN=24,HIDE=800,root=document.scrollingElement||document.documentElement,bars=new Map();
+const isPage=el=>el===root||el===document.body;
+function scrollable(el){if(isPage(el))return true;const cs=getComputedStyle(el);return /(auto|scroll)/.test(cs.overflowX+cs.overflowY)}
+function mk(el,ax){const t=document.createElement('div');t.className='osb osb-'+ax;t.setAttribute('aria-hidden','true');document.body.appendChild(t);
+ const b={el,ax,t,timer:0,drag:null};
+ t.addEventListener('pointerdown',e=>{e.preventDefault();e.stopPropagation();t.setPointerCapture(e.pointerId);t.classList.add('drag');
+  b.drag={p:ax==='y'?e.clientY:e.clientX,s:ax==='y'?el.scrollTop:el.scrollLeft};show(b)});
+ t.addEventListener('pointermove',e=>{if(!b.drag)return;const g=geo(b);if(!g)return;const d=(ax==='y'?e.clientY:e.clientX)-b.drag.p;
+  const v=b.drag.s+d*(g.max/Math.max(1,g.track-g.len));if(ax==='y')el.scrollTop=v;else el.scrollLeft=v});
+ const end=()=>{b.drag=null;t.classList.remove('drag');show(b)};t.addEventListener('pointerup',end);t.addEventListener('pointercancel',end);
+ t.addEventListener('pointerenter',()=>show(b,true));t.addEventListener('pointerleave',()=>show(b));
+ return b}
+function geo(b){const el=b.el,y=b.ax==='y',pg=isPage(el);
+ const cs=y?el.scrollHeight:el.scrollWidth,vs=pg?(y?innerHeight:innerWidth):(y?el.clientHeight:el.clientWidth),max=cs-vs;
+ if(max<1||vs<1)return null;
+ const r=pg?{left:0,top:0,right:document.documentElement.clientWidth,bottom:document.documentElement.clientHeight}:el.getBoundingClientRect();
+ if(!pg&&(r.bottom<0||r.top>innerHeight||r.right<0||r.left>innerWidth))return null;
+ const track=(y?r.bottom-r.top:r.right-r.left)-GAP*2,len=Math.max(MIN,track*vs/cs),pos=(y?el.scrollTop:el.scrollLeft)/max*(track-len);
+ return {r,max,track,len,pos}}
+function place(b){const g=geo(b),s=b.t.style;if(!g){s.display='none';return}s.display='';
+ if(b.ax==='y'){s.width=W+'px';s.height=g.len+'px';s.left=(g.r.right-W-GAP)+'px';s.top=(g.r.top+GAP+g.pos)+'px'}
+ else{s.height=W+'px';s.width=g.len+'px';s.top=(g.r.bottom-W-GAP)+'px';s.left=(g.r.left+GAP+g.pos)+'px'}}
+function show(b,stay){place(b);b.t.classList.add('on');clearTimeout(b.timer);if(!stay&&!b.drag&&!b.t.matches(':hover'))b.timer=setTimeout(()=>b.t.classList.remove('on'),HIDE)}
+function attach(el){if(bars.has(el))return;const bs=[mk(el,'y'),mk(el,'x')];bars.set(el,bs);
+ if(!isPage(el)){el.addEventListener('scroll',()=>bs.forEach(b=>show(b)),{passive:true});
+  el.addEventListener('pointerenter',()=>bs.forEach(b=>show(b)));if(ro)ro.observe(el)}}
+let raf=0;const all=()=>{cancelAnimationFrame(raf);raf=requestAnimationFrame(()=>bars.forEach(bs=>bs.forEach(place)))};
+const ro=window.ResizeObserver?new ResizeObserver(all):null;
+function scan(){document.querySelectorAll('body *:not(.osb)').forEach(el=>{if(!bars.has(el)&&scrollable(el))attach(el)});
+ bars.forEach((bs,el)=>{if(!isPage(el)&&!el.isConnected){bs.forEach(b=>b.t.remove());bars.delete(el)}});all()}
+attach(root);const pb=bars.get(root);
+addEventListener('scroll',()=>{pb.forEach(b=>show(b));bars.forEach((bs,el)=>{if(!isPage(el))bs.forEach(place)})},{passive:true});
+addEventListener('resize',all,{passive:true});
+let near=0;addEventListener('pointermove',e=>{if(e.pointerType!=='mouse')return;const n=e.clientX>document.documentElement.clientWidth-16;if(n&&!near)pb.forEach(b=>show(b));near=n},{passive:true});
+if(ro){ro.observe(document.documentElement);ro.observe(document.body)}
+let mt=0;const own=n=>n.nodeType===1&&n.classList.contains('osb');
+new MutationObserver(ms=>{if(ms.every(m=>m.type==='attributes'?own(m.target):[...m.addedNodes,...m.removedNodes].every(own)))return;
+ clearTimeout(mt);mt=setTimeout(scan,100)}).observe(document.body,{childList:true,subtree:true,attributes:true,attributeFilter:['class','style']});
+scan()})();</script><script src="https://cdn.jsdelivr.net/npm/lucide@1.59.0/dist/umd/lucide.min.js"></script><script>lucide.createIcons();</script>
 </body></html>"""
 
 if __name__ == "__main__":
